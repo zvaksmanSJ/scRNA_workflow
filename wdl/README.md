@@ -80,10 +80,20 @@ analysis and results organization. Run products, `final_results/`, logs, and
 Cromwell metadata are retained under the new results directory. Never point
 this workflow at a completed production tree.
 
+Each stage adapter loads the validated paths from
+`step2_reference_audit.json` in the run directory. This keeps later alignment,
+counting, and matrix tasks on the same configured shared-reference bundle
+checked by preflight; portable setup defaults are used only when no run audit
+is configured.
+
 ## Validation status
 
 Static WDL parsing is available with `miniwdl check main.wdl`, but its generic
 checker warns about the expected Cromwell-specific runtime keys. The pipeline
-has not been executed end-to-end from a clean checkout or certified on LSF.
-The setup/index build, full WDL path, and all stage adapters still require
+is not certified on LSF or end-to-end from a clean checkout. A 47-cell
+production attempt passed preflight and QC preprocessing but failed at QC
+alignment because its stage adapter used portable reference defaults instead
+of the configured shared-reference paths. The adapter now reads the validated
+reference audit, but this fix still requires a new workflow attempt. The
+setup/index build, full WDL path, and remaining stage adapters still require
 cluster validation. Do not treat this README as production sign-off.

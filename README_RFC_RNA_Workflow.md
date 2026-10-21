@@ -1115,13 +1115,18 @@ inputs. The combined sample manifest, generated Cromwell JSON, tool
 preflight, and reference audit are retained there. Womtool 82 validates the
 WDL and input JSON; the local tool preflight and reference audit passed.
 
-At the last recorded status check, Cromwell workflow
-`f69178cf-652b-4856-8d8a-8fd3b1cceaeb` was running only its preflight LSF
-job `334440049` (last observed `RUN`). No QC or full-depth analysis stage had
-been confirmed as started. Four earlier preflight-only attempts and their
-logs/execution directories are retained. This status is a snapshot, not a
-live monitor; consult the run manifest and Cromwell/LSF state before making
-any operational decision. Do not duplicate or relaunch this active workflow.
+Cromwell workflow `f69178cf-652b-4856-8d8a-8fd3b1cceaeb` passed preflight
+(LSF job `334440049`) and the 47-cell QC preprocessing audit (job
+`334440397`). QC alignment job `334443961` then exited with code 1 before
+submitting STAR tasks: the stage driver used portable default references
+instead of the configured shared-reference paths, and could not find
+`wdl_runtime/references/Ensembl104/GRCh38.primary.fa`. The reference handoff
+is corrected in the source, but not yet validated in a new workflow attempt.
+No other QC or full-depth analysis stages passed in this attempt. Its logs,
+execution directory, and audited preprocessing products are preserved. Do
+not reuse this results tree: preflight intentionally refuses existing stage
+outputs. Consult the run manifest and current Cromwell/LSF state before
+deciding how to continue.
 
 **Sprocket port:** `miniwdl check sprocket/main.wdl` passes static validation,
 but Sprocket and Docker are unavailable in the documented cluster setup.
