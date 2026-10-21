@@ -1121,7 +1121,10 @@ Cromwell workflow `f69178cf-652b-4856-8d8a-8fd3b1cceaeb` passed preflight
 submitting STAR tasks: the stage driver used portable default references
 instead of the configured shared-reference paths, and could not find
 `wdl_runtime/references/Ensembl104/GRCh38.primary.fa`. The reference handoff
-is corrected in the source, but not yet validated in a new workflow attempt.
+is corrected in the source. Retry workflow
+`fde1801d-3cb4-4b51-a2c3-6050d3b8b876` passed preflight (job `334445333`),
+and its QC preprocessing job `334445570` is running; QC alignment has not yet
+exercised the corrected reference handoff.
 No other QC or full-depth analysis stages passed in this attempt. Its logs,
 execution directory, and audited preprocessing products are preserved. Do
 not reuse this results tree: preflight intentionally refuses existing stage

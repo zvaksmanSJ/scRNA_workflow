@@ -94,6 +94,7 @@ is not certified on LSF or end-to-end from a clean checkout. A 47-cell
 production attempt passed preflight and QC preprocessing but failed at QC
 alignment because its stage adapter used portable reference defaults instead
 of the configured shared-reference paths. The adapter now reads the validated
-reference audit, but this fix still requires a new workflow attempt. The
-setup/index build, full WDL path, and remaining stage adapters still require
-cluster validation. Do not treat this README as production sign-off.
+reference audit. The corrected retry has passed preflight and QC preprocessing
+is running; QC alignment has not yet exercised the fix. The setup/index build,
+full WDL path, and remaining stage adapters still require cluster validation.
+Do not treat this README as production sign-off.
