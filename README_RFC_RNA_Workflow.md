@@ -139,8 +139,10 @@ This repository is source-only. It excludes cohort FASTQs and manifests,
 results, local audit/job records, reference indexes, installed environments,
 downloaded assets, institutional logos, backup copies, and the private
 BaseJumper source. No project-level open-source license has been selected.
-Repository access is private; do not redistribute the code or associated
-research data beyond approved collaborators.
+The repository is public, but public visibility does not grant permission to
+use, modify, or redistribute the project code. Obtain institutional approval
+and select an appropriate license before reuse. This source publication does
+not provide access to research data or the excluded BaseJumper source.
 
 Static WDL validation and focused code tests do not certify a clean-checkout
 run, a new reference build, or execution on an LSF cluster. The complete
