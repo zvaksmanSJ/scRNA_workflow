@@ -77,13 +77,24 @@ BaseJumper consensus score or use them to exclude samples.
    The Dockerfile uses the checked-in `setup/environment.yml`, Salmon 1.6.0,
    and downloads checksum-pinned AMOR, ohchibi, and harrietr source archives at
    build time. Record the final image digest before production use.
-4. Replace the image URI in `sprocket/example_inputs.json` and create a
-   complete inputs JSON for every sample. `sample_ids`, `r1_fastqs`, and
-   `r2_fastqs` must have identical lengths and order.
-5. Point the reference inputs to the audited Ensembl 104 GTF, refFlat,
-   housekeeping BED, private STAR index, and the intended Salmon index.
-   Use a new, empty output directory; do not point at the completed
-   `RNA_results` tree.
+4. Create a four-column sample sheet with `sample_id`, `r1`, `r2`, and
+   `group` columns. After running `setup/setup.sh` with references enabled,
+   use the input builder to fill the sample arrays and all reference paths
+   from `runtime_config.json`:
+
+   ```bash
+   RUNTIME="/path/to/wdl_runtime"
+   "$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/build_run_inputs.py \
+     --workflow sprocket \
+     --sample-sheet /path/to/rna_cells.tsv \
+     --runtime-config "$RUNTIME/runtime_config.json" \
+     --sprocket-container docker://ghcr.io/<your-organization>/resolveome-rna:1.0.0 \
+     --sprocket-output /path/to/new/sprocket_inputs.json
+   ```
+
+   The builder validates the configured references and preserves sample-sheet
+   order. Use a new, empty output directory for the workflow; do not point at
+   the completed `RNA_results` tree.
 
 ## Example invocation
 

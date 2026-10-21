@@ -16,6 +16,27 @@ RUNTIME = Path(os.environ.get("RNA_RUNTIME_DIR", RNAW / "wdl_runtime"))
 RUNTIME_CONFIG = RUNTIME / "runtime_config.json"
 
 
+def load_runtime_config(runtime_config: Path) -> dict:
+    config_path = runtime_config.resolve(strict=True)
+    config = json.loads(config_path.read_text())
+    refs = config["references"]
+    for key in ("fasta", "gtf", "tx2gene", "genebody", "ref_flat"):
+        path = Path(refs[key]).resolve(strict=True)
+        if not path.is_file():
+            raise FileNotFoundError(f"Missing configured RNA reference: {path}")
+        refs[key] = str(path)
+    for key, marker in (
+        ("star_index", "Genome"),
+        ("salmon_index", "versionInfo.json"),
+    ):
+        index = Path(refs[key]).resolve(strict=True)
+        if not index.is_dir() or not (index / marker).is_file():
+            raise FileNotFoundError(
+                f"Missing configured RNA index or marker {marker}: {index}")
+        refs[key] = str(index)
+    return config
+
+
 def build_inputs(results_dir: Path, basej_source_dir: Path,
                  runtime_config: Path = RUNTIME_CONFIG) -> dict:
     results_dir = results_dir.resolve(strict=True)
@@ -29,7 +50,7 @@ def build_inputs(results_dir: Path, basej_source_dir: Path,
     basej_source_dir = basej_source_dir.resolve(strict=True)
     if not (basej_source_dir / "main.nf").is_file():
         raise FileNotFoundError(f"BaseJumper Nextflow source is incomplete: {basej_source_dir}")
-    config = json.loads(runtime_config.resolve(strict=True).read_text())
+    config = load_runtime_config(runtime_config)
     samples = read_samples(results_dir / "rna_cells.tsv")
     if len(samples) < 5:
         raise ValueError("The cohort workflow requires at least five samples")
@@ -53,16 +74,6 @@ def build_inputs(results_dir: Path, basej_source_dir: Path,
             Path(config["salmon_environment"]) / "bin/salmon"),
         "ResolveOmeRnaWorkflow.salmon_index": refs["salmon_index"],
     }
-    for key in ("fasta", "gtf", "tx2gene", "genebody", "ref_flat"):
-        path = Path(refs[key])
-        if not path.is_file():
-            raise FileNotFoundError(f"Missing configured RNA reference: {path}")
-    for path in (
-        Path(refs["star_index"]) / "Genome",
-        Path(refs["salmon_index"]) / "versionInfo.json",
-    ):
-        if not path.is_file():
-            raise FileNotFoundError(f"Missing configured index file: {path}")
     return inputs
 
 

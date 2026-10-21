@@ -16,22 +16,23 @@ LSF execution test.
 ## Prepare inputs and launch
 
 Set absolute paths to the installed Cromwell jar, a sample sheet, and the
-authorized BaseJumper source. Prepare a **new** results directory; the helper
-refuses to reuse an existing one and symlinks FASTQs without copying them.
+authorized BaseJumper source. Prepare a **new** results directory; the builder refuses to reuse an existing
+one and symlinks FASTQs without copying them.
 
 ```bash
 RESULTS="/path/to/new/rna_run"
 SAMPLES="/path/to/rna_cells.tsv"
 BASEJ_SOURCE="/authorized/path/to/basej-rnaqc"
 CROMWELL_JAR="/path/to/cromwell.jar"
+RUNTIME="/path/to/wdl_runtime"
 
-bash setup/setup.sh --runtime-dir /path/to/wdl_runtime
-python wdl/scripts/prepare_wdl_run.py \
-  --results-dir "$RESULTS" --sample-sheet "$SAMPLES"
-python wdl/scripts/build_inputs_json.py \
-  --results-dir "$RESULTS" --basej-source-dir "$BASEJ_SOURCE" \
-  --runtime-config /path/to/wdl_runtime/runtime_config.json \
-  --output "$RESULTS/wdl_inputs.json"
+bash setup/setup.sh --runtime-dir "$RUNTIME"
+"$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/build_run_inputs.py \
+  --workflow cromwell \
+  --sample-sheet "$SAMPLES" \
+  --runtime-config "$RUNTIME/runtime_config.json" \
+  --results-dir "$RESULTS" \
+  --basej-source-dir "$BASEJ_SOURCE"
 
 java -Dconfig.file=wdl/cromwell_lsf.conf \
   -jar "$CROMWELL_JAR" run main.wdl \
@@ -43,10 +44,31 @@ The sample sheet must have exactly `sample_id`, `r1`, `r2`, and `group`
 columns, unique safe sample IDs, existing paired FASTQs, and at least five
 samples for the source cohort plots. See
 `examples/rna_cells.example.tsv`. The runtime config must point to references
-that exist and have built STAR/Salmon indexes. `nextflow_threads` and
+that exist and have built STAR/Salmon indexes. The builder creates
+`$RESULTS/wdl_inputs.json` and prepares the isolated run directory before
+writing it. It refuses to reuse an existing results directory or overwrite an
+inputs JSON. `nextflow_threads` and
 `nextflow_memory_mb` are adjustable WDL inputs; by default, per-cell
 Nextflow/LSF processes request 8 CPUs and 64 GB. Set the Cromwell queue with
 the workflow `queue` input.
+
+To generate both Cromwell and Sprocket inputs from one sample sheet, add
+`--workflow both` and `--sprocket-container docker://registry/image:tag` to
+the builder command. It writes `sprocket_inputs.json` alongside the Cromwell
+JSON. For Sprocket alone, choose a new output path and provide an accessible
+container image:
+
+```bash
+"$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/build_run_inputs.py \
+  --workflow sprocket \
+  --sample-sheet "$SAMPLES" \
+  --runtime-config "$RUNTIME/runtime_config.json" \
+  --sprocket-container docker://registry/image:tag \
+  --sprocket-output /path/to/new/sprocket_inputs.json
+```
+
+The builder only prepares run directories and JSON; it never submits or starts
+a workflow. Sprocket remains a prototype and is not production-validated.
 
 ## Gates and results
 

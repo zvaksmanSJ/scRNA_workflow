@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "wdl/scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "extra_methods"))
 import prepare_wdl_run
 import build_inputs_json
+import build_run_inputs
 import organize_rna_results
 
 
@@ -131,6 +132,152 @@ class WdlPreparationTests(unittest.TestCase):
                 inputs["ResolveOmeRnaWorkflow.basej_source_dir"], str(basej_source))
             self.assertEqual(
                 inputs["ResolveOmeRnaWorkflow.runtime_dir"], str(project))
+
+    def test_build_sprocket_inputs_uses_setup_references_and_sample_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fastqs = root / "fastqs"
+            fastqs.mkdir()
+            rows = []
+            for index in range(2):
+                r1 = fastqs / f"cell_{index}_R1.fastq.gz"
+                r2 = fastqs / f"cell_{index}_R2.fastq.gz"
+                r1.write_bytes(b"fixture")
+                r2.write_bytes(b"fixture")
+                rows.append({
+                    "sample_id": f"cell_{index}", "r1": str(r1), "r2": str(r2),
+                    "group": "test",
+                })
+            sample_sheet = root / "samples.tsv"
+            with sample_sheet.open("w", newline="") as stream:
+                writer = csv.DictWriter(
+                    stream, fieldnames=["sample_id", "r1", "r2", "group"],
+                    delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            refs = root / "references"
+            refs.mkdir()
+            for name in ("fasta", "gtf", "tx2gene", "genebody", "ref_flat"):
+                (refs / name).write_text("fixture\n")
+            star_index = refs / "STAR"
+            star_index.mkdir()
+            (star_index / "Genome").write_text("fixture\n")
+            salmon_index = refs / "salmon"
+            salmon_index.mkdir()
+            (salmon_index / "versionInfo.json").write_text("{}\n")
+            runtime_config = root / "runtime_config.json"
+            runtime_config.write_text(json.dumps({
+                "references": {
+                    "fasta": str(refs / "fasta"),
+                    "gtf": str(refs / "gtf"),
+                    "tx2gene": str(refs / "tx2gene"),
+                    "genebody": str(refs / "genebody"),
+                    "star_index": str(star_index),
+                    "ref_flat": str(refs / "ref_flat"),
+                    "salmon_index": str(salmon_index),
+                },
+            }))
+
+            inputs = build_run_inputs.build_sprocket_inputs(
+                sample_sheet, runtime_config, "docker://example/rna:1.0")
+            prefix = "ResolveOmeRnaSprocketWorkflow."
+            self.assertEqual(inputs[prefix + "sample_ids"], ["cell_0", "cell_1"])
+            self.assertEqual(
+                inputs[prefix + "r1_fastqs"], [row["r1"] for row in rows])
+            self.assertEqual(inputs[prefix + "r2_fastqs"], [row["r2"] for row in rows])
+            self.assertEqual(inputs[prefix + "star_index"], str(star_index))
+            self.assertEqual(inputs[prefix + "salmon_index"], str(salmon_index))
+            self.assertEqual(inputs[prefix + "container"], "docker://example/rna:1.0")
+
+    def test_input_json_writer_refuses_overwrite_and_workflow_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "inputs.json"
+            build_run_inputs.write_json(output, {"sample_ids": ["cell_1"]})
+            with self.assertRaises(FileExistsError):
+                build_run_inputs.write_json(output, {"sample_ids": ["cell_2"]})
+            with patch.object(build_run_inputs, "RNAW", Path(temporary)):
+                with self.assertRaisesRegex(ValueError, "inside workflow source"):
+                    build_run_inputs.write_json(Path(temporary) / "generated.json", {})
+
+    def test_build_both_input_files_and_prepare_new_results_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fastqs = root / "fastqs"
+            fastqs.mkdir()
+            sheet = root / "samples.tsv"
+            rows = []
+            for index in range(5):
+                mates = []
+                for mate in ("R1", "R2"):
+                    path = fastqs / f"cell_{index}_{mate}.fastq.gz"
+                    path.write_bytes(b"fixture")
+                    mates.append(path)
+                rows.append({
+                    "sample_id": f"cell_{index}", "r1": str(mates[0]),
+                    "r2": str(mates[1]), "group": "test",
+                })
+            with sheet.open("w", newline="") as stream:
+                writer = csv.DictWriter(
+                    stream, fieldnames=["sample_id", "r1", "r2", "group"],
+                    delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            refs = root / "references"
+            refs.mkdir()
+            for name in ("fasta", "gtf", "tx2gene", "genebody", "ref_flat"):
+                (refs / name).write_text("fixture\n")
+            star_index = refs / "STAR"
+            star_index.mkdir()
+            (star_index / "Genome").write_text("fixture\n")
+            salmon_index = refs / "salmon"
+            salmon_index.mkdir()
+            (salmon_index / "versionInfo.json").write_text("{}\n")
+            runtime_config = root / "runtime_config.json"
+            runtime_config.write_text(json.dumps({
+                "conda_base": str(root / "conda"),
+                "rna_environment": str(root / "env/rna"),
+                "salmon_environment": str(root / "env/salmon"),
+                "references": {
+                    "fasta": str(refs / "fasta"),
+                    "gtf": str(refs / "gtf"),
+                    "tx2gene": str(refs / "tx2gene"),
+                    "genebody": str(refs / "genebody"),
+                    "star_index": str(star_index),
+                    "ref_flat": str(refs / "ref_flat"),
+                    "salmon_index": str(salmon_index),
+                },
+            }))
+            basej_source = root / "basej"
+            basej_source.mkdir()
+            (basej_source / "main.nf").write_text("workflow {}\n")
+            results_dir = root / "new_run"
+            args = type("Args", (), {
+                "workflow": "both",
+                "sample_sheet": sheet,
+                "runtime_config": runtime_config,
+                "results_dir": results_dir,
+                "basej_source_dir": basej_source,
+                "sprocket_container": "docker://example/rna:1.0",
+                "sprocket_output": None,
+            })()
+
+            outputs = build_run_inputs.build_run(args)
+            self.assertEqual(
+                {path.name for path in outputs},
+                {"wdl_inputs.json", "sprocket_inputs.json"})
+            self.assertTrue((results_dir / "fastqs/cell_0_R1.fastq.gz").is_symlink())
+            cromwell = json.loads((results_dir / "wdl_inputs.json").read_text())
+            sprocket = json.loads((results_dir / "sprocket_inputs.json").read_text())
+            self.assertEqual(
+                cromwell["ResolveOmeRnaWorkflow.sample_ids"],
+                [row["sample_id"] for row in rows])
+            self.assertEqual(
+                sprocket["ResolveOmeRnaSprocketWorkflow.sample_ids"],
+                [row["sample_id"] for row in rows])
+            with self.assertRaises(FileExistsError):
+                build_run_inputs.build_run(args)
 
 
 if __name__ == "__main__":

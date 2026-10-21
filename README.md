@@ -94,11 +94,16 @@ Sprocket must be installed separately with its LSF/Apptainer backend. Build
 and publish the task image as described in
 [`sprocket/README.md`](./sprocket/README.md). Copy the generic example inputs
 and replace its sample arrays, paths, reference indexes, and image with values
-for your run:
+for your run. Or generate the Sprocket JSON directly from the sample sheet and
+the setup-generated reference configuration:
 
 ```bash
-cp sprocket/example_inputs.json /path/to/rna_inputs.json
-# Edit /path/to/rna_inputs.json; use all samples in identical array order.
+"$RNA_RUNTIME_DIR/env/resolveome-rna/bin/python" wdl/scripts/build_run_inputs.py \
+  --workflow sprocket \
+  --sample-sheet /path/to/rna_cells.tsv \
+  --runtime-config "$RNA_RUNTIME_DIR/runtime_config.json" \
+  --sprocket-container docker://registry.example/resolveome-rna:1.0.0 \
+  --sprocket-output /path/to/rna_inputs.json
 sprocket run \
   --config sprocket/sprocket.toml \
   sprocket/main.wdl \
@@ -127,12 +132,12 @@ CROMWELL_JAR="/path/to/cromwell.jar"
 export RNA_RUNTIME_DIR="$RUNTIME"
 
 bash setup/setup.sh --runtime-dir "$RUNTIME" --threads 8 --memory-mb 64000
-"$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/prepare_wdl_run.py \
-  --results-dir "$RESULTS" --sample-sheet "$SAMPLES"
-"$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/build_inputs_json.py \
-  --results-dir "$RESULTS" --basej-source-dir "$BASEJ_SOURCE" \
+"$RUNTIME/env/resolveome-rna/bin/python" wdl/scripts/build_run_inputs.py \
+  --workflow cromwell \
+  --sample-sheet "$SAMPLES" \
   --runtime-config "$RUNTIME/runtime_config.json" \
-  --output "$RESULTS/wdl_inputs.json"
+  --results-dir "$RESULTS" \
+  --basej-source-dir "$BASEJ_SOURCE"
 
 java -Dconfig.file=wdl/cromwell_lsf.conf \
   -jar "$CROMWELL_JAR" run main.wdl \
@@ -142,6 +147,11 @@ java -Dconfig.file=wdl/cromwell_lsf.conf \
 
 See [`wdl/README.md`](./wdl/README.md) for sample-sheet requirements,
 configuration, gates, and output locations.
+
+The builder prepares the new results tree and writes its Cromwell JSON to
+`$RESULTS/wdl_inputs.json`. To generate both engine-specific files in one call,
+use `--workflow both` and pass `--sprocket-container`; it also writes
+`$RESULTS/sprocket_inputs.json`. JSON generation does not submit a workflow.
 
 ### 4. Direct Nextflow driver (advanced)
 
