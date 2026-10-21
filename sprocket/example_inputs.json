@@ -1,0 +1,17 @@
+{
+  "ResolveOmeRnaSprocketWorkflow.sample_ids": [
+    "sample_001"
+  ],
+  "ResolveOmeRnaSprocketWorkflow.r1_fastqs": [
+    "/path/to/fastqs/sample_001_R1.fastq.gz"
+  ],
+  "ResolveOmeRnaSprocketWorkflow.r2_fastqs": [
+    "/path/to/fastqs/sample_001_R2.fastq.gz"
+  ],
+  "ResolveOmeRnaSprocketWorkflow.star_index": "/path/to/STAR_Ensembl104",
+  "ResolveOmeRnaSprocketWorkflow.salmon_index": "/path/to/salmon_index",
+  "ResolveOmeRnaSprocketWorkflow.ref_gtf": "/path/to/Homo_sapiens.GRCh38.104.chr.gtf",
+  "ResolveOmeRnaSprocketWorkflow.ref_flat": "/path/to/Ensembl104.refFlat.txt",
+  "ResolveOmeRnaSprocketWorkflow.genebody_bed": "/path/to/GRCh38_gene_body.bed",
+  "ResolveOmeRnaSprocketWorkflow.container": "docker://ghcr.io/your-org/resolveome-rna:1.0.0"
+}

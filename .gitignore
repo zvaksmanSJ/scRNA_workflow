@@ -1,0 +1,34 @@
+# Local cohort inputs, outputs, references, and runtime installations
+/data/
+/wdl_runtime/
+/references/
+/logs/
+/setup/environment.explicit.txt
+/analysis_resources/stjude_logo.svg
+/analysis_resources/ReactomePathways.gmt.zip
+/Backup_code/
+/RNA_results*/
+
+# Local or unlicensed third-party source and downloaded build assets
+/vendor/basej-rnaqc/
+/vendor/packages/
+/legacy_nextflow/tools/nextflow
+
+# Workflow caches and generated Python/build artifacts
+/.nextflow/
+/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.part
+*.out
+*.err
+
+# Never commit local credentials or private key material.
+.env
+.env.*
+*.pem
+*.key
+*.token
+credentials*.json
+*_credentials.json

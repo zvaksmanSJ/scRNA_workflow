@@ -1,0 +1,18 @@
+[run.backends.default]
+type = "lsf_apptainer"
+default_lsf_queue.name = "standard"
+default_lsf_queue.max_cpu_per_task = 16
+default_lsf_queue.max_memory_per_task = "64 GB"
+job_name_prefix = "rna_sprocket"
+max_concurrency = 100
+interval = 30
+
+[run.backends.default.apptainer]
+image_cache_dir = "/path/to/shared/apptainer-image-cache"
+
+[run.task]
+cpu_limit_behavior = "deny"
+memory_limit_behavior = "deny"
+
+[run.workflow.scatter]
+concurrency = 64

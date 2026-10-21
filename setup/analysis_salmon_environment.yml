@@ -1,0 +1,6 @@
+name: resolveome-rna-salmon
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - salmon=1.6.0
