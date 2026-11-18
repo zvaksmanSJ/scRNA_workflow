@@ -8,7 +8,7 @@ Salmon indexes. It writes runtime paths to
 
 ## Requirements
 
-- Linux, conda or mamba, curl, gzip, tar, `cksum`, and `sha256sum`.
+- Linux, conda or mamba, curl, gzip, tar, `sum` (BSD mode), and `sha256sum`.
 - Approximately 100 GB free disk for environments, references, and indexes.
 - At least 48 GB RAM for STAR index generation (64 GB recommended).
 - Cromwell and Java are separate prerequisites for `main.wdl`; they are not
@@ -27,8 +27,9 @@ bash setup/setup.sh --threads 8 --memory-mb 64000
 bash setup/setup.sh --runtime-dir /path/with/space/wdl_runtime
 ```
 
-Reactome is downloaded to the ignored `analysis_resources/` asset path expected
-by the downstream analysis; source control contains only its README and hash.
+Reactome release 98 is downloaded to the ignored
+`analysis_resources/ReactomePathways.v98.gmt.zip` asset path expected by new
+analyses. The original archive is retained for existing results.
 The reference builder verifies downloaded Ensembl files against the release
 `CHECKSUMS` entries before unpacking, derives annotation helper files from the
 same GTF, and refuses to overwrite an incomplete Salmon index. Existing

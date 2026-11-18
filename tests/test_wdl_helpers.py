@@ -50,12 +50,18 @@ class WdlPreparationTests(unittest.TestCase):
                 canonical = assets / asset_path.removeprefix("analysis_resources/")
                 canonical.write_text(asset_path)
                 (root / result_path).write_text(asset_path)
-            with patch.object(organize_rna_results, "RNAW", source), \
-                    patch.object(organize_rna_results, "PACKAGE_AUDIT_LINKS", {}), \
-                    patch.object(organize_rna_results, "PACKAGE_LOG_MOVES", {}):
-                links = organize_rna_results.check_duplicate_links(root)
-            self.assertEqual(len(links), 2)
-            self.assertTrue(all(canonical.parent == assets for _, canonical in links))
+            for archive in ("ReactomePathways.v98.gmt.zip", "ReactomePathways.gmt.zip"):
+                with self.subTest(archive=archive):
+                    if archive == "ReactomePathways.gmt.zip":
+                        for directory in (assets, references):
+                            (directory / "ReactomePathways.v98.gmt.zip").rename(
+                                directory / archive)
+                    with patch.object(organize_rna_results, "RNAW", source), \
+                            patch.object(organize_rna_results, "PACKAGE_AUDIT_LINKS", {}), \
+                            patch.object(organize_rna_results, "PACKAGE_LOG_MOVES", {}):
+                        links = organize_rna_results.check_duplicate_links(root)
+                    self.assertEqual(len(links), 2)
+                    self.assertIn((references / archive, assets / archive), links)
 
     def test_prepare_copies_stage_code_and_links_immutable_fastqs(self):
         with tempfile.TemporaryDirectory() as temporary:

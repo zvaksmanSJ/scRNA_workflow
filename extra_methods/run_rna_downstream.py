@@ -41,7 +41,9 @@ BASEJUMPER_REPORTS = RNAR / "stage7_full_reports"
 TX2GENE = Path(os.environ.get(
     "RNA_TX2GENE", RUNTIME / "references/Ensembl104/Ensembl104.tx2gene.tsv"))
 RESOURCES = Path(os.environ.get("RNA_ANALYSIS_RESOURCES", RNAW / "analysis_resources"))
-REACTOME_SHA256 = "8c1dbc8578431da5d2d5118262718c60b553a9be3398e93658daa069e4a9afd4"
+REACTOME_ARCHIVE = "ReactomePathways.v98.gmt.zip"
+REACTOME_URL = "https://reactome.org/download/98/ReactomePathways.gmt.zip"
+REACTOME_SHA256 = "6056fcd95dc8f09740c8bb64c2765bea1386ce91b9b19cd10bcd45d30451805c"
 BASEJUMPER_SOURCE = Path(os.environ.get("BASEJ_RNA_SOURCE", RNAW / "vendor/basej-rnaqc"))
 BASEJUMPER_COMMIT_FILE = Path(os.environ.get(
     "BASEJ_RNA_COMMIT_FILE", RNAW / "vendor/UPSTREAM_COMMIT"))
@@ -847,9 +849,6 @@ def build_dashboard(
     figure_dir = OUT / "06_figures"
     logo_path = OUT / "09_references/stjude_logo.svg"
     source_logo = Path(os.environ.get("RNA_LOGO", RESOURCES / "stjude_logo.svg"))
-    reactome_archive = RESOURCES / "ReactomePathways.gmt.zip"
-    if not reactome_archive.is_file():
-        raise FileNotFoundError(reactome_archive)
     if source_logo.is_file():
         ensure_reference_link(source_logo, logo_path)
         logo = logo_path.read_text()
@@ -860,7 +859,9 @@ def build_dashboard(
             'alt="St. Jude Children&#39;s Research Hospital">')
     else:
         logo_markup = '<div class="brand-mark" aria-label="ResolveOME RNA">ResolveOME<br>RNA</div>'
-    ensure_reference_link(reactome_archive, OUT / "09_references/ReactomePathways.gmt.zip")
+    if not (OUT / "09_references/ReactomePathways.gmt.zip").is_file():
+        ensure_reference_link(
+            RESOURCES / REACTOME_ARCHIVE, OUT / "09_references" / REACTOME_ARCHIVE)
     ensure_reference_link(RESOURCES / "README.txt", OUT / "09_references/README.txt")
     qc_counts = qc.status.value_counts().to_dict()
     sample_count = len(qc)
@@ -1329,7 +1330,7 @@ def run() -> Path:
     save_tsv(corr_df.reset_index(), OUT / "01_expression/spearman_correlation.tsv")
     plot_abundance(metrics, captions)
 
-    gene_sets = load_reactome_sets(RESOURCES / "ReactomePathways.gmt.zip")
+    gene_sets = load_reactome_sets(RESOURCES / REACTOME_ARCHIVE)
     enrichment, pathway_scores = run_pathway_enrichment(
         metrics, gene_sets, samples, log_counts)
     save_tsv(enrichment, OUT / "04_pathways/reactome_variable_gene_enrichment.tsv")
@@ -1409,7 +1410,7 @@ def run() -> Path:
         "basejumper_settings_parity": parity["status"],
         "pathway_analysis": {
             "database": "ReactomePathways.gmt",
-            "source_url": "https://reactome.org/download/current/ReactomePathways.gmt.zip",
+            "source_url": REACTOME_URL,
             "archive_sha256": REACTOME_SHA256,
             "method": "hypergeometric over-representation of 500 most variable expressed genes",
             "background": "genes with mean raw HTSeq count >=10",

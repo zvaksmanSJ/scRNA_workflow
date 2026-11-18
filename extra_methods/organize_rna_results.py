@@ -75,8 +75,8 @@ PACKAGE_AUDIT_LINKS = {
 }
 
 PACKAGE_REFERENCE_LINKS = {
-    "final_results/09_references/ReactomePathways.gmt.zip":
-        "analysis_resources/ReactomePathways.gmt.zip",
+    "final_results/09_references/ReactomePathways.v98.gmt.zip":
+        "analysis_resources/ReactomePathways.v98.gmt.zip",
     "final_results/09_references/README.txt": "analysis_resources/README.txt",
 }
 
@@ -142,6 +142,11 @@ def check_duplicate_links(root: Path) -> list[tuple[Path, Path]]:
             duplicate = root / "final_results/07_qc_provenance/source_audits" / old \
                 if mapping is PACKAGE_AUDIT_LINKS else root / old
             canonical = canonical_root / new
+            if mapping is PACKAGE_REFERENCE_LINKS and duplicate.name == "ReactomePathways.v98.gmt.zip":
+                legacy = duplicate.with_name("ReactomePathways.gmt.zip")
+                if not duplicate.exists() and not duplicate.is_symlink() and legacy.is_file():
+                    duplicate = legacy
+                    canonical = canonical.with_name(legacy.name)
             if not canonical.exists():
                 for move_source, move_target in FILE_MOVES.items():
                     if move_target == new:

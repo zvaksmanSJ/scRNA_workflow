@@ -58,7 +58,7 @@ if [[ -z "$CONDA_BIN" ]]; then
   echo "[ERROR] Install Miniforge/Miniconda or Mamba and put conda/mamba on PATH" >&2
   exit 1
 fi
-for tool in curl gzip tar sha256sum; do
+for tool in curl gzip tar sha256sum sum; do
   command -v "$tool" >/dev/null || {
     echo "[ERROR] Required command not found: $tool" >&2
     exit 1
@@ -115,12 +115,12 @@ download_pinned \
 download_pinned \
   "https://cloud.r-project.org/src/contrib/harrietr_0.2.3.tar.gz" "$HARRIETR" \
   "920179cba12072872eba6ec1de423889931f3a92155bf30d803212a93dd6db58"
-REACTOME="$WORKFLOW_ROOT/analysis_resources/ReactomePathways.gmt.zip"
+REACTOME="$WORKFLOW_ROOT/analysis_resources/ReactomePathways.v98.gmt.zip"
 download_pinned \
-  "https://reactome.org/download/current/ReactomePathways.gmt.zip" "$REACTOME" \
-  "8c1dbc8578431da5d2d5118262718c60b553a9be3398e93658daa069e4a9afd4"
+  "https://reactome.org/download/98/ReactomePathways.gmt.zip" "$REACTOME" \
+  "6056fcd95dc8f09740c8bb64c2765bea1386ce91b9b19cd10bcd45d30451805c"
 
-"$ENV_PREFIX/bin/R" CMD INSTALL "$AMOR" "$OHCHIBI" "$HARRIETR"
+"$ENV_PREFIX/bin/R" CMD INSTALL "$AMOR" "$HARRIETR" "$OHCHIBI"
 "$ENV_PREFIX/bin/Rscript" -e \
   'stopifnot(as.character(packageVersion("AMOR")) == "0.1.2", as.character(packageVersion("harrietr")) == "0.2.3", requireNamespace("ohchibi", quietly=TRUE))'
 "$ENV_PREFIX/bin/STAR" --version

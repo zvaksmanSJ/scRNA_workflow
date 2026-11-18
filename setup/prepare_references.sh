@@ -43,6 +43,10 @@ if [[ -z "$CONDA_BIN" ]]; then
   echo "[ERROR] conda or mamba is required; run setup/setup.sh first" >&2
   exit 1
 fi
+command -v sum >/dev/null || {
+  echo "[ERROR] BSD checksum utility (sum) is required for Ensembl downloads" >&2
+  exit 1
+}
 R_ENV="$RUNTIME_DIR/env/resolveome-rna"
 SALMON_ENV="$RUNTIME_DIR/env/resolveome-rna-salmon"
 [[ -x "$R_ENV/bin/STAR" && -x "$R_ENV/bin/samtools" ]] || {
@@ -77,7 +81,7 @@ download_ensembl() {
   if [[ ! -s "$destination" ]]; then
     curl --fail --location --retry 3 \
       --output "$destination.part" "$url"
-    read -r actual_crc actual_size actual_name < <(cksum "$destination.part")
+    read -r actual_crc actual_size actual_name < <(sum -r "$destination.part")
     if [[ "$expected_crc" != "$actual_crc" || "$expected_size" != "$actual_size" ]]; then
       rm -f "$destination.part"
       echo "[ERROR] Ensembl checksum mismatch for $name" >&2
@@ -85,7 +89,7 @@ download_ensembl() {
     fi
     mv "$destination.part" "$destination"
   else
-    read -r actual_crc actual_size actual_name < <(cksum "$destination")
+    read -r actual_crc actual_size actual_name < <(sum -r "$destination")
     if [[ "$expected_crc" != "$actual_crc" || "$expected_size" != "$actual_size" ]]; then
       echo "[ERROR] Existing Ensembl file failed checksum validation: $destination" >&2
       return 1
